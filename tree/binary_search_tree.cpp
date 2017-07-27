@@ -1,7 +1,6 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include <thread>
 
 template<typename T>
 struct Node {
@@ -202,24 +201,18 @@ Node<T> * BinarySearchTree<T>::get_parent(Node<T> * node, Node<T> * parent) {
 int main() {
     BinarySearchTree<int> tree;
     tree.create();
-//    tree.preorder_traverse(); std::cout << std::endl;
+    tree.preorder_traverse(); std::cout << std::endl;
     tree.inorder_traverse(); std::cout << std::endl;
-//    tree.postorder_traverse(); std::cout << std::endl;
+    tree.postorder_traverse(); std::cout << std::endl;
 
-/*
     std::cout << "Find: ";
     int temp;
     std::cin >> temp;
     auto node = tree.find(temp);
-*/
 
-    int temp;
     std::cout << "Delete: ";
     std::cin >> temp;
     tree.remove(temp);
-    
-
-//    std::cout << tree.get_rightmost_child(node->left)->value << std::endl;
 
     tree.inorder_traverse(); std::cout << std::endl;
 
