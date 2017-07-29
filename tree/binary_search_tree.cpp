@@ -9,7 +9,7 @@ struct Node {
     T value;
     
     Node(): left(nullptr), right(nullptr), value() {}
-    Node(T t): left(nullptr), right(nullptr), value(t) {} 
+    explicit Node(T t): left(nullptr), right(nullptr), value(t) {} 
 };
 
 template <typename T>
@@ -99,12 +99,11 @@ void BinarySearchTree<T>::remove(Node<T> * node, T t) {
     else if (t > node->value) { remove(node->right, t); } 
     else {
         // has no child
-        if (!node->left && !node->right) { 
+        if (!node->left && !node->right) {
             auto parent = get_parent(node, root);
             if (node == parent->left) parent->left = nullptr;
             else if (node == parent->right) parent->right = nullptr;
             delete node;
-            ;
         }
         // has a left child
         else if (node->left) {
@@ -112,7 +111,6 @@ void BinarySearchTree<T>::remove(Node<T> * node, T t) {
             if (node == parent->left) parent->left = node->left;
             else if (node == parent->right) parent->right = node->left;
             delete node;
-            ;
         }
         // has a right child
         else if (node->right) {
@@ -120,12 +118,10 @@ void BinarySearchTree<T>::remove(Node<T> * node, T t) {
             if (node == parent->left) parent->left = node->right;
             else if (node == parent->right) parent->right = node->right;
             delete node;
-            ;
         }
         // has two children
         // find its in-order predecessor
         else { 
-
             // removing connection with parent
             auto parent = get_parent(node, root);
             if (node == parent->left) parent->left = nullptr;
@@ -137,7 +133,6 @@ void BinarySearchTree<T>::remove(Node<T> * node, T t) {
             pre->right = node->right;
             pre->value = node->value;
             delete node;
-            ;
         }
     }
 }
@@ -186,7 +181,6 @@ void BinarySearchTree<T>::destroy(Node<T> * node) {
     destroy(node->left);
     destroy(node->right);
     delete node;
-    ;
     return;
 }
 

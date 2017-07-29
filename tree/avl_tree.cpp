@@ -10,7 +10,7 @@ struct Node {
     unsigned height;
     
     Node(): left(nullptr), right(nullptr), value(), height(0) {}
-    Node(T t): left(nullptr), right(nullptr), value(t), height(0) {} 
+    explicit Node(T t): left(nullptr), right(nullptr), value(t), height(0) {} 
 };
 
 template <typename T>
@@ -49,8 +49,10 @@ class AVLTree {
     AVLTree(): root(nullptr) {}
     ~AVLTree() { destroy(root); }
 
+    unsigned height() { return height(root); }
+
     void create();
-    void insert(T t) { auto node = new Node<T>(t); if (!root) root = node; else insert(node, root); }
+    void insert(T t) { auto node = new Node<T>(t); if (!root) root = node;  else insert(node, root); }
     void remove(T t) { remove(root, t); }
     void print(enum Directions direction) const;
     Node<T> * find(T t) const { return find(root, t); }
@@ -63,53 +65,28 @@ void AVLTree<T>::create() {
     std::string line;
     std::getline(std::cin, line);
     std::istringstream iss(line);
-    while (iss >> t) {
-        if (root == nullptr) { root = new Node<T>(t); }
-        else { insert(t); }
-    }
+    while (iss >> t) { insert(t); }
 }
 
 template <typename T>
 Node<T> *  AVLTree<T>::insert(Node<T> * node, Node<T> * iterator) {
-    if (!iterator) return node;
+    if (!iterator) { iterator = node; }
     else if (node->value <= iterator->value) {
         iterator->left = insert(node, iterator->left);
         if (height(iterator->left) - height(iterator->right) == 2) {
-            auto parent = get_parent(iterator, root);
-            if (parent) {
-                if (node->value <= iterator->left->value) {
-                    // left to left
-                    if (parent->left == iterator) parent->left = right_rotate(iterator);
-                    else parent->right = right_rotate(iterator);
-                } 
-                else {
-                    // right to left
-                    if (parent->left == iterator) parent->left = left_right_rotate(iterator);
-                    else parent->right = left_right_rotate(iterator);
-                }
-            } 
+            if (node->value <= iterator->left->value) iterator = right_rotate(iterator);
+            else iterator = left_right_rotate(iterator);
         }
     }
     else {
         iterator->right = insert(node, iterator->right);
         if (height(iterator->right) - height(iterator->left) == 2) {
-            auto parent = get_parent(iterator, root);
-            if (parent) {
-                // right to right
-                if (node->value > iterator->right->value) {
-                    if (parent->left == iterator) parent->left = left_rotate(iterator);
-                    else parent->right = left_rotate(iterator);
-                }
-                // left to right
-                else {
-                    if (parent->left == iterator) parent->left = right_left_rotate(iterator);
-                    else parent->right = right_left_rotate(iterator);
-                }
-            }
+            if (node->value > iterator->right->value) iterator = left_rotate(iterator);
+            else iterator = right_left_rotate(iterator);
         }
     }
-    node->height = max(height(node->left), height(node->right)) + 1;
-    return node;
+    iterator->height = max(height(iterator->left), height(iterator->right)) + 1;
+    return iterator;
 }
 
 template <typename T>
@@ -298,20 +275,21 @@ Node<T> * AVLTree<T>::right_left_rotate(Node<T> * top) {
 int main() {
     AVLTree<int> tree;
     tree.create();
-    tree.print(AVLTree<int>::Directions::preorder); std::cout << std::endl;
+//    tree.print(AVLTree<int>::Directions::preorder); std::cout << std::endl;
     tree.print(AVLTree<int>::Directions::inorder); std::cout << std::endl;
-    tree.print(AVLTree<int>::Directions::postorder); std::cout << std::endl;
+//    tree.print(AVLTree<int>::Directions::postorder); std::cout << std::endl;
 
+/*
+    
     std::cout << "Find: ";
     int temp;
     std::cin >> temp;
     auto node = tree.find(temp);
 
-/*
     std::cout << "Delete: ";
     std::cin >> temp;
     tree.remove(temp);
- */
 
     tree.print(AVLTree<int>::Directions::inorder);
+    */
 }
