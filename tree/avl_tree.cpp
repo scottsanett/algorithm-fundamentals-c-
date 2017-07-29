@@ -15,32 +15,32 @@ struct Node {
 
 template <typename T>
 class AVLTree {
-    private:
-    Node<T> * root;
-    static enum Rotations { left, right, left_right, right_left } rotations;
+    using node_type = Node<T> *;
+    public:
+    node_type root;
 
     private:
-    unsigned int height(Node<T> * node) { return (node) ? node->height : 0; } 
+    unsigned int height(node_type node) { return (node) ? node->height : 0; } 
     unsigned int max(unsigned lhs, unsigned rhs) { return (lhs > rhs) ? lhs : rhs; } 
 
-    Node<T> * insert(Node<T> * node, Node<T> * iterator);
-    void remove(Node<T> * node, T t);
-    void destroy(Node<T> * node);
-    void rotate(Node<T> * node);
+    auto insert(node_type & iterator, T t) -> decltype(iterator);
+    void remove(node_type node, T t);
+    void destroy(node_type node);
+    void rotate(node_type node);
 
-    void preorder_traverse(Node<T> * node) const;
-    void inorder_traverse(Node<T> * node) const;
-    void postorder_traverse(Node<T> * node) const;
+    void preorder_traverse(node_type node) const;
+    void inorder_traverse(node_type node) const;
+    void postorder_traverse(node_type node) const;
 
-    Node<T> * find(Node<T> * node, T t) const;
-    Node<T> * get_parent(Node<T> * node, Node<T> * parent) const;
-    Node<T> * get_leftmost_child(Node<T> * node) const;
-    Node<T> * get_rightmost_child(Node<T> * node) const;
+    decltype(auto) find(node_type node, T t) const;
+    decltype(auto) get_parent(node_type node, node_type parent) const;
+    decltype(auto) get_leftmost_child(node_type node) const;
+    decltype(auto) get_rightmost_child(node_type node) const;
 
-    Node<T> * left_rotate(Node<T> * node);
-    Node<T> * right_rotate(Node<T> * node);
-    Node<T> * left_right_rotate(Node<T> * node);
-    Node<T> * right_left_rotate(Node<T> * node);
+    decltype(auto) left_rotate(node_type node);
+    decltype(auto) right_rotate(node_type node);
+    decltype(auto) left_right_rotate(node_type node);
+    decltype(auto) right_left_rotate(node_type node);
 
     public:
     static enum Directions { preorder, inorder, postorder } directions;
@@ -52,10 +52,10 @@ class AVLTree {
     unsigned height() { return height(root); }
 
     void create();
-    void insert(T t) { auto node = new Node<T>(t); if (!root) root = node;  else insert(node, root); }
+    void insert(T t) { insert(root, t); }
     void remove(T t) { remove(root, t); }
     void print(enum Directions direction) const;
-    Node<T> * find(T t) const { return find(root, t); }
+    decltype(auto) find(T t) const { return find(root, t); }
 };
 
 template <typename T>
@@ -69,19 +69,19 @@ void AVLTree<T>::create() {
 }
 
 template <typename T>
-Node<T> *  AVLTree<T>::insert(Node<T> * node, Node<T> * iterator) {
-    if (!iterator) { iterator = node; }
-    else if (node->value <= iterator->value) {
-        iterator->left = insert(node, iterator->left);
+auto AVLTree<T>::insert(node_type & iterator, T t) -> decltype(iterator) {
+    if (!iterator) { iterator = new Node<T>(t); }
+    else if (t <= iterator->value) {
+        iterator->left = insert(iterator->left, t);
         if (height(iterator->left) - height(iterator->right) == 2) {
-            if (node->value <= iterator->left->value) iterator = right_rotate(iterator);
+            if (t <= iterator->left->value) iterator = right_rotate(iterator);
             else iterator = left_right_rotate(iterator);
         }
     }
     else {
-        iterator->right = insert(node, iterator->right);
+        iterator->right = insert(iterator->right, t);
         if (height(iterator->right) - height(iterator->left) == 2) {
-            if (node->value > iterator->right->value) iterator = left_rotate(iterator);
+            if (t > iterator->right->value) iterator = left_rotate(iterator);
             else iterator = right_left_rotate(iterator);
         }
     }
@@ -90,30 +90,30 @@ Node<T> *  AVLTree<T>::insert(Node<T> * node, Node<T> * iterator) {
 }
 
 template <typename T>
-Node<T> * AVLTree<T>::find(Node<T> * node, T t) const {
+decltype(auto) AVLTree<T>::find(node_type node, T t) const {
     if (node == nullptr) return node;
-    Node<T> * p;
+    node_type p;
     if (node->value == t) return node;
     else if ((p = find(node->left, t)) != nullptr) return p;
     else return find(node->right, t);
 }
 
 template <typename T>
-Node<T> * AVLTree<T>::get_leftmost_child(Node<T> * node) const {
+decltype(auto) AVLTree<T>::get_leftmost_child(node_type node) const {
     if (!node->left && !node->right) return node;
     else if (!node->left && node->right) return get_leftmost_child(node->right);
     else return get_leftmost_child(node->left);
 }
 
 template <typename T> // a node's left substree's right most child
-Node<T> * AVLTree<T>::get_rightmost_child(Node<T> * node) const {
+decltype(auto) AVLTree<T>::get_rightmost_child(node_type node) const {
     if (!node->left && !node->right) return node;
     else if (node->left && !node->right) { return get_rightmost_child(node->left); }
     else return get_rightmost_child(node->right);
 }
 
 template <typename T>
-void AVLTree<T>::remove(Node<T> * node, T t) {
+void AVLTree<T>::remove(node_type node, T t) {
     if (t < node->value) { remove(node->left, t); }
     else if (t > node->value) { remove(node->right, t); } 
     else {
@@ -123,7 +123,6 @@ void AVLTree<T>::remove(Node<T> * node, T t) {
             if (node == parent->left) parent->left = nullptr;
             else if (node == parent->right) parent->right = nullptr;
             delete node;
-            node = nullptr;
         }
         // has a left child
         else if (node->left) {
@@ -131,7 +130,6 @@ void AVLTree<T>::remove(Node<T> * node, T t) {
             if (node == parent->left) parent->left = node->left;
             else if (node == parent->right) parent->right = node->left;
             delete node;
-            node = nullptr;
         }
         // has a right child
         else if (node->right) {
@@ -139,12 +137,10 @@ void AVLTree<T>::remove(Node<T> * node, T t) {
             if (node == parent->left) parent->left = node->right;
             else if (node == parent->right) parent->right = node->right;
             delete node;
-            node = nullptr;
         }
         // has two children
         // find its in-order predecessor
         else { 
-
             // removing connection with parent
             auto parent = get_parent(node, root);
             if (node == parent->left) parent->left = nullptr;
@@ -156,14 +152,13 @@ void AVLTree<T>::remove(Node<T> * node, T t) {
             pre->right = node->right;
             pre->value = node->value;
             delete node;
-            node = nullptr;
         }
     }
 }
 
 
 template <typename T>
-void AVLTree<T>::preorder_traverse(Node<T> * node) const {
+void AVLTree<T>::preorder_traverse(node_type node) const {
     if (node == nullptr) { return; }
     std::cout << node->value << " ";
     preorder_traverse(node->left);
@@ -171,7 +166,7 @@ void AVLTree<T>::preorder_traverse(Node<T> * node) const {
 }
 
 template <typename T>
-void AVLTree<T>::inorder_traverse(Node<T> * node) const {
+void AVLTree<T>::inorder_traverse(node_type node) const {
     if (node == nullptr) return;
     inorder_traverse(node->left);
     std::cout << node->value << " ";
@@ -179,7 +174,7 @@ void AVLTree<T>::inorder_traverse(Node<T> * node) const {
 }
 
 template <typename T>
-void AVLTree<T>::postorder_traverse(Node<T> * node) const {
+void AVLTree<T>::postorder_traverse(node_type node) const {
     if (node == nullptr) return;
     postorder_traverse(node->left);
     postorder_traverse(node->right);
@@ -187,7 +182,7 @@ void AVLTree<T>::postorder_traverse(Node<T> * node) const {
 }
 
 template <typename T>
-void AVLTree<T>::destroy(Node<T> * node) {
+void AVLTree<T>::destroy(node_type node) {
     if (node == nullptr) return;
     if (node == root) {
         destroy(root->left);
@@ -205,7 +200,6 @@ void AVLTree<T>::destroy(Node<T> * node) {
     destroy(node->left);
     destroy(node->right);
     delete node;
-    node = nullptr;
     return;
 }
 
@@ -228,16 +222,16 @@ void AVLTree<T>::print(enum Directions direction) const {
 }
 
 template <typename T>
-Node<T> * AVLTree<T>::get_parent(Node<T> * node, Node<T> * parent) const {
-    Node<T> * p;
-    if (node == nullptr || parent == nullptr) return nullptr;
+decltype(auto) AVLTree<T>::get_parent(node_type node, node_type parent) const {
+    node_type p;
+    if (node == nullptr || parent == nullptr) return parent;
     if (parent->left == node || parent->right == node) { return parent; }
     else if ((p = get_parent(node, parent->left)) != nullptr) return p;
     else return get_parent(node, parent->right);
 }
 
 template <typename T>
-Node<T> * AVLTree<T>::left_rotate(Node<T> * top) {
+decltype(auto) AVLTree<T>::left_rotate(node_type top) {
     auto middle = top->right;
     top->right = middle->left;
     middle->left = top;
@@ -249,7 +243,7 @@ Node<T> * AVLTree<T>::left_rotate(Node<T> * top) {
 }
 
 template <typename T>
-Node<T> * AVLTree<T>::right_rotate(Node<T> * top) {
+decltype(auto) AVLTree<T>::right_rotate(node_type top) {
     auto middle = top->left;
     top->left = middle->right;
     middle->right = top;
@@ -261,15 +255,15 @@ Node<T> * AVLTree<T>::right_rotate(Node<T> * top) {
 }
 
 template <typename T>
-Node<T> * AVLTree<T>::left_right_rotate(Node<T> * top) {
-    auto newtop = left_rotate(top->left);
-    return right_rotate(newtop);
+decltype(auto) AVLTree<T>::left_right_rotate(node_type top) {
+    top->left = left_rotate(top->left);
+    return right_rotate(top);
 }
 
 template <typename T>
-Node<T> * AVLTree<T>::right_left_rotate(Node<T> * top) {
-    auto newtop = right_rotate(top->right);
-    return left_rotate(newtop);
+decltype(auto) AVLTree<T>::right_left_rotate(node_type top) {
+    top->right = right_rotate(top->right);
+    return left_rotate(top);
 }
 
 int main() {
@@ -277,6 +271,7 @@ int main() {
     tree.create();
 //    tree.print(AVLTree<int>::Directions::preorder); std::cout << std::endl;
     tree.print(AVLTree<int>::Directions::inorder); std::cout << std::endl;
+    std::cout << tree.root->right->value << std::endl; 
 //    tree.print(AVLTree<int>::Directions::postorder); std::cout << std::endl;
 
 /*
