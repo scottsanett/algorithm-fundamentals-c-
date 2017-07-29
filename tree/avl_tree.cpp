@@ -24,7 +24,7 @@ class AVLTree {
     unsigned int max(unsigned lhs, unsigned rhs) { return (lhs > rhs) ? lhs : rhs; } 
 
     auto insert(node_type & iterator, T t) -> decltype(iterator);
-    void remove(node_type node, T t);
+    auto remove(node_type & iterator, T t) -> decltype(iterator);
     void destroy(node_type node);
     void rotate(node_type node);
 
@@ -90,6 +90,52 @@ auto AVLTree<T>::insert(node_type & iterator, T t) -> decltype(iterator) {
 }
 
 template <typename T>
+auto AVLTree<T>::remove(node_type & iterator, T t) -> decltype(iterator) {
+    if (!iterator) return iterator;
+    if (t == iterator->value) {
+        if (iterator->left && iterator->right) {
+            if (height(iterator->left) <= height(iterator->right)) {
+                auto successor = get_leftmost_child(iterator->right);
+                iterator->value = successor->value;
+                iterator->right = remove(iterator->right, successor->value);
+            }
+            else {
+                auto predecessor = get_rightmost_child(iterator->left);
+                iterator->value = predecessor->value;
+                iterator->left = remove(iterator->left, predecessor->value);
+            }
+        }
+        else {
+            auto temp = iterator;
+            if (iterator->left) iterator = iterator->left;
+            else if (iterator->right) iterator = iterator->right;
+            delete temp;
+            iterator = nullptr;
+            return iterator;
+        }
+    }
+    else if (t < iterator->value) {
+        iterator->left = remove(iterator->left, t);
+        if (height(iterator->right) - height(iterator->left) == 2) {
+            if (height(iterator->right->left) > height(iterator->right->right)) 
+                iterator = right_left_rotate(iterator); 
+            else 
+                iterator = left_rotate(iterator);
+        }
+    }
+    else {
+        iterator->right = remove(iterator->right, t);
+        if (height(iterator->right) - height(iterator->left) == 2) {
+            if (height(iterator->left->left) > height(iterator->left->right))
+                iterator = right_rotate(iterator);
+            else
+                iterator = left_right_rotate(iterator);
+        }
+    }
+    return iterator;
+}
+
+template <typename T>
 decltype(auto) AVLTree<T>::find(node_type node, T t) const {
     if (node == nullptr) return node;
     node_type p;
@@ -110,50 +156,6 @@ decltype(auto) AVLTree<T>::get_rightmost_child(node_type node) const {
     if (!node->left && !node->right) return node;
     else if (node->left && !node->right) { return get_rightmost_child(node->left); }
     else return get_rightmost_child(node->right);
-}
-
-template <typename T>
-void AVLTree<T>::remove(node_type node, T t) {
-    if (t < node->value) { remove(node->left, t); }
-    else if (t > node->value) { remove(node->right, t); } 
-    else {
-        // has no child
-        if (!node->left && !node->right) { 
-            auto parent = get_parent(node, root);
-            if (node == parent->left) parent->left = nullptr;
-            else if (node == parent->right) parent->right = nullptr;
-            delete node;
-        }
-        // has a left child
-        else if (node->left) {
-            auto parent = get_parent(node, root);
-            if (node == parent->left) parent->left = node->left;
-            else if (node == parent->right) parent->right = node->left;
-            delete node;
-        }
-        // has a right child
-        else if (node->right) {
-            auto parent = get_parent(node, root);
-            if (node == parent->left) parent->left = node->right;
-            else if (node == parent->right) parent->right = node->right;
-            delete node;
-        }
-        // has two children
-        // find its in-order predecessor
-        else { 
-            // removing connection with parent
-            auto parent = get_parent(node, root);
-            if (node == parent->left) parent->left = nullptr;
-            else if (node == parent->right) parent->right = nullptr;
-
-            // find its predecessor and copy its members to the predecessor
-            auto pre = get_rightmost_child(node->left);
-            pre->left = node->left;
-            pre->right = node->right;
-            pre->value = node->value;
-            delete node;
-        }
-    }
 }
 
 
@@ -271,7 +273,7 @@ int main() {
     tree.create();
 //    tree.print(AVLTree<int>::Directions::preorder); std::cout << std::endl;
     tree.print(AVLTree<int>::Directions::inorder); std::cout << std::endl;
-    std::cout << tree.root->right->value << std::endl; 
+    
 //    tree.print(AVLTree<int>::Directions::postorder); std::cout << std::endl;
 
 /*
@@ -280,11 +282,12 @@ int main() {
     int temp;
     std::cin >> temp;
     auto node = tree.find(temp);
-
+*/
+    
+    int temp;
     std::cout << "Delete: ";
     std::cin >> temp;
     tree.remove(temp);
 
     tree.print(AVLTree<int>::Directions::inorder);
-    */
 }
