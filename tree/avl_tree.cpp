@@ -114,15 +114,19 @@ auto AVLTree<T>::remove(node_type & iterator, T t) -> decltype(iterator) {
             return iterator;
         }
     }
+    // delete on left subtree, could potentially lead to imbalance
     else if (t < iterator->value) {
         iterator->left = remove(iterator->left, t);
         if (height(iterator->right) - height(iterator->left) == 2) {
+            // iterator is the top node
+            // iterator->right is the middle node
             if (height(iterator->right->left) > height(iterator->right->right)) 
                 iterator = right_left_rotate(iterator); 
             else 
                 iterator = left_rotate(iterator);
         }
     }
+    // delete on right subtree, could potentially lead to imbalance
     else {
         iterator->right = remove(iterator->right, t);
         if (height(iterator->right) - height(iterator->left) == 2) {
