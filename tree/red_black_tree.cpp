@@ -36,13 +36,13 @@ private:
     void inorder_traverse(node_type node) const;
     void postorder_traverse(node_type node) const;
     
-    decltype(auto) find(node_type node, T t) const;
+    auto find(node_type node, T t) const -> decltype(node);
     auto get_parent(node_type & node, node_type & parent) const -> decltype(node);
-    decltype(auto) get_leftmost_child(node_type node) const;
-    decltype(auto) get_rightmost_child(node_type node) const;
+    auto get_leftmost_child(node_type node) const -> decltype(node);
+    auto get_rightmost_child(node_type node) const -> decltype(node);
     
-    decltype(auto) left_rotate(node_type node);
-    decltype(auto) right_rotate(node_type node);
+    auto left_rotate(node_type node) -> decltype(node);
+    auto right_rotate(node_type node) -> decltype(node);
     void insert_fixup(node_type & iterator);
     
 public:
@@ -72,7 +72,7 @@ void RedBlackTree<T>::create() {
 }
 
 template <typename T>
-decltype(auto) RedBlackTree<T>::find(node_type node, T t) const {
+auto RedBlackTree<T>::find(node_type node, T t) const -> decltype(node) {
     if (node == nullptr) return node;
     node_type p;
     if (node->value == t) return node;
@@ -81,14 +81,14 @@ decltype(auto) RedBlackTree<T>::find(node_type node, T t) const {
 }
 
 template <typename T>
-decltype(auto) RedBlackTree<T>::get_leftmost_child(node_type node) const {
+auto RedBlackTree<T>::get_leftmost_child(node_type node) const -> decltype(node) {
     if (!node->left && !node->right) return node;
     else if (!node->left && node->right) return get_leftmost_child(node->right);
     else return get_leftmost_child(node->left);
 }
 
 template <typename T> // a node's left substree's right most child
-decltype(auto) RedBlackTree<T>::get_rightmost_child(node_type node) const {
+auto RedBlackTree<T>::get_rightmost_child(node_type node) const -> decltype(node) {
     if (!node->left && !node->right) return node;
     else if (node->left && !node->right) { return get_rightmost_child(node->left); }
     else return get_rightmost_child(node->right);
@@ -168,7 +168,7 @@ auto RedBlackTree<T>::get_parent(node_type & node, node_type & parent) const -> 
             }
 
 template <typename T>
-decltype(auto) RedBlackTree<T>::left_rotate(node_type node) {
+auto RedBlackTree<T>::left_rotate(node_type node) -> decltype(node) {
     auto right = node->right;
     node->right = right->left;
     auto parent = get_parent(node, root);
@@ -183,7 +183,7 @@ decltype(auto) RedBlackTree<T>::left_rotate(node_type node) {
 }
 
 template <typename T>
-decltype(auto) RedBlackTree<T>::right_rotate(node_type node) {
+auto RedBlackTree<T>::right_rotate(node_type node) -> decltype(node) {
     auto left = node->left;
     node->left = left->right;
     auto parent = get_parent(node, root);
