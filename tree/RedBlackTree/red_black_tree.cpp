@@ -12,7 +12,7 @@ struct Node {
     Node * right;
     T value;
     Colors color;
-    
+
     Node(): left(nullptr), right(nullptr), value(), color(Colors::red) {}
     Node(T t): left(nullptr), right(nullptr), value(t), color(Colors::red) {}
 };
@@ -22,38 +22,39 @@ class RedBlackTree {
     using node_type = Node<T> *;
 public:
     node_type root;
-    
+
 private:
     unsigned int height(node_type node) { return (node) ? node->height : 0; }
     unsigned int max(unsigned lhs, unsigned rhs) { return (lhs > rhs) ? lhs : rhs; }
 
     auto remove(node_type & iterator, T t) -> decltype(iterator);
+    auto insert(node_type & iterator, T t) -> decltype(iterator);
     void destroy(node_type node);
     void insert_fixup(node_type & iterator);
-    
+
     void preorder_traverse(node_type node) const;
     void inorder_traverse(node_type node) const;
     void postorder_traverse(node_type node) const;
-    
+
     auto find(node_type node, T t) const -> decltype(node);
     auto get_parent(node_type & node, node_type & parent) const -> decltype(node);
     auto get_leftmost_child(node_type node) const -> decltype(node);
     auto get_rightmost_child(node_type node) const -> decltype(node);
-    
+
     auto left_rotate(node_type node) -> decltype(node);
     auto right_rotate(node_type node) -> decltype(node);
-    
+
 public:
     static enum Directions { preorder, inorder, postorder } directions;
-    
+
 public:
     RedBlackTree(): root(nullptr) {}
     ~RedBlackTree() { destroy(root); }
-    
+
     unsigned height() { return height(root); }
-    
+
     void create();
-    void insert(T t);
+    void insert(T t) { insert(root, t); }
     void remove(T t) { remove(root, t); }
     void print(enum Directions direction) const;
     decltype(auto) find(T t) const { return find(root, t); }
@@ -162,8 +163,8 @@ auto RedBlackTree<T>::get_parent(node_type & node, node_type & parent) const -> 
     if (node == nullptr || parent == nullptr) return parent;
     if (parent->left == node || parent->right == node) { return parent; }
     else if (get_parent(node, parent->left) != nullptr) return get_parent(node, parent->left);
-        else return get_parent(node, parent->right);
-            }
+    else return get_parent(node, parent->right);
+}
 
 template <typename T>
 auto RedBlackTree<T>::left_rotate(node_type node) -> decltype(node) {
@@ -196,8 +197,17 @@ auto RedBlackTree<T>::right_rotate(node_type node) -> decltype(node) {
 }
 
 template <typename T>
-void RedBlackTree<T>::insert(T t) {
-
+auto RedBlackTree<T>::insert(node_type & iterator, T t) -> decltype(iterator) {
+    if (!iterator) {
+        iterator = new Node<T>(t);
+    }
+    else if (t < iterator->value) {
+        iterator->left = insert(iterator->left, t);
+    }
+    else if (t > iterator->value) {
+        iterator->right = insert(iterator->right, t);
+    }
+    return iterator;
 }
 
 template <typename T>
@@ -220,7 +230,6 @@ auto RedBlackTree<T>::remove(node_type & iterator, T t) -> decltype(iterator) {
             if (!predecessor) return iterator;
             iterator->value = predecessor->value;
             iterator->color = predecessor->color;
-            *iterator = *predecessor;
             iterator->left = remove(iterator->left, predecessor->value);
         }
         else {
@@ -231,12 +240,12 @@ auto RedBlackTree<T>::remove(node_type & iterator, T t) -> decltype(iterator) {
             iterator = nullptr;
         }
     }
-    return iterator; 
+    return iterator;
 }
 
 int main() {
     RedBlackTree<int> tree;
     tree.create();
-//    tree.remove(3);
+    tree.remove(3);
     tree.print(RedBlackTree<int>::Directions::inorder);
 }
