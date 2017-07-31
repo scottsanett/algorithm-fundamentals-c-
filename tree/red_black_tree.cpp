@@ -2,8 +2,6 @@
 #include <string>
 #include <sstream>
 
-#define DEBUG std::cout
-
 enum class Colors {
     red, black
 };
