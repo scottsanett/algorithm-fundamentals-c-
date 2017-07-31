@@ -30,7 +30,7 @@ private:
     unsigned int max(unsigned lhs, unsigned rhs) { return (lhs > rhs) ? lhs : rhs; }
     
     void destroy(node_type node);
-    void rotate(node_type node);
+    void insert_fixup(node_type & iterator);
     
     void preorder_traverse(node_type node) const;
     void inorder_traverse(node_type node) const;
@@ -43,7 +43,6 @@ private:
     
     auto left_rotate(node_type node) -> decltype(node);
     auto right_rotate(node_type node) -> decltype(node);
-    void insert_fixup(node_type & iterator);
     
 public:
     static enum Directions { preorder, inorder, postorder } directions;
