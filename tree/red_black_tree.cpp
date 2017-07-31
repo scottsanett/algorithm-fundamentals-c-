@@ -29,8 +29,6 @@ private:
     unsigned int height(node_type node) { return (node) ? node->height : 0; }
     unsigned int max(unsigned lhs, unsigned rhs) { return (lhs > rhs) ? lhs : rhs; }
     
-    void insert(node_type & iterator, T t);
-    void remove(node_type & iterator, T t);
     void destroy(node_type node);
     void rotate(node_type node);
     
@@ -57,8 +55,8 @@ public:
     unsigned height() { return height(root); }
     
     void create();
-    void insert(T t) { insert(root, t); }
-    void remove(T t) { remove(root, t); }
+    void insert(T t);
+    void remove(T t);
     void print(enum Directions direction) const;
     decltype(auto) find(T t) const { return find(root, t); }
 };
@@ -173,7 +171,6 @@ template <typename T>
 decltype(auto) RedBlackTree<T>::left_rotate(node_type node) {
     auto right = node->right;
     node->right = right->left;
-    //
     auto parent = get_parent(node, root);
     if (!parent) root = right;
     else {
@@ -183,7 +180,6 @@ decltype(auto) RedBlackTree<T>::left_rotate(node_type node) {
     }
     right->left = node;
     return right;
-    //
 }
 
 template <typename T>
@@ -202,7 +198,7 @@ decltype(auto) RedBlackTree<T>::right_rotate(node_type node) {
 }
 
 template <typename T>
-void RedBlackTree<T>::insert(node_type & iterator, T t) {
+void RedBlackTree<T>::insert(T t) {
     auto node = new Node<T>(t);
     auto itr = root;
     node_type pos = nullptr;
