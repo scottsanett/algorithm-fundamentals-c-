@@ -27,8 +27,8 @@ public:
 private:
     unsigned int max(unsigned lhs, unsigned rhs) { return (lhs > rhs) ? lhs : rhs; }
     
-    auto remove(node_type & iterator, T t) -> decltype(iterator);
-    auto insert(node_type & iterator, T t) -> decltype(iterator);
+    void remove(node_type & iterator, T t);
+    void insert(node_type & iterator, T t);
     void destroy(node_type node);
     void insert_fixup(node_type & iterator, Children child);
     
@@ -168,52 +168,34 @@ auto RedBlackTree<T>::get_parent(node_type & node, node_type & parent) const -> 
 
 template <typename T>
 auto RedBlackTree<T>::left_rotate(node_type node) -> decltype(node) {
+    if (!node) return node;
     auto right = node->right;
-    if (right) {
-        node->right = right->left;
-    }
-    auto parent = get_parent(node, root);
-    if (!parent) root = right;
-        else {
-            if (node == parent->left)
-                parent->left = right;
-                else parent->right = right;
-                    }
+    node->right = right->left;
     right->left = node;
     return right;
 }
 
 template <typename T>
 auto RedBlackTree<T>::right_rotate(node_type node) -> decltype(node) {
+    if (!node) return node;
     auto left = node->left;
     node->left = left->right;
-    /*
-     auto parent = get_parent(node, root);
-     if (!parent) root = left;
-     else {
-     if (node == parent->left)
-     parent->left = left;
-     else parent->right = left;
-     }
-     */
     left->right = node;
     return left;
 }
 
 template <typename T>
-auto RedBlackTree<T>::insert(node_type & iterator, T t) -> decltype(iterator) {
+void RedBlackTree<T>::insert(node_type & iterator, T t) {
     if (!iterator) {
         iterator = new Node<T>(t);
+        auto parent = get_parent(iterator, root);
+        if (parent) {
+            if (parent->left == iterator) insert_fixup(parent, Children::left);
+            else insert_fixup(parent, Children::right);
+        }
     }
-    else if (t < iterator->value) {
-        iterator->left = insert(iterator->left, t);
-        insert_fixup(iterator, Children::left);
-    }
-    else if (t > iterator->value) {
-        iterator->right = insert(iterator->right, t);
-        insert_fixup(iterator, Children::right);
-    }
-    return iterator;
+    else if (t <= iterator->value) { insert(iterator->left, t); }
+    else { insert(iterator->right, t); }
 }
 
 template <typename T>
@@ -221,8 +203,8 @@ void RedBlackTree<T>::insert_fixup(node_type & iterator, Children child) {
     if (!iterator) return;
     auto & current = iterator;
     while (current && current->color == Colors::red) {
-        auto parent = get_parent(current, root);
-        if (!parent) return;
+        auto & parent = get_parent(current, root);
+        if (!parent) { return; }
         if (current == parent->left) {
             auto sibling = parent->right;
             auto sibling_color = (sibling) ? sibling->color : Colors::black;
@@ -235,6 +217,8 @@ void RedBlackTree<T>::insert_fixup(node_type & iterator, Children child) {
             else {
                 if (child == Children::right) {
                     current = left_rotate(current);
+                    parent->left = current;
+                    child = Children::left;
                 }
                 else {
                     parent->color = Colors::red;
@@ -242,7 +226,7 @@ void RedBlackTree<T>::insert_fixup(node_type & iterator, Children child) {
                 }
             }
         }
-        else {
+        else { // current == parent->right
             auto sibling = parent->left;
             auto sibling_color = (sibling) ? sibling->color : Colors::black;
             if (sibling_color == Colors::red) {
@@ -253,8 +237,9 @@ void RedBlackTree<T>::insert_fixup(node_type & iterator, Children child) {
             }
             else {
                 if (child == Children::left) {
-                    current = parent;
                     current = right_rotate(current);
+                    parent->right = current;
+                    child = Children::right;
                 }
                 else {
                     parent->color = Colors::red;
@@ -263,48 +248,42 @@ void RedBlackTree<T>::insert_fixup(node_type & iterator, Children child) {
             }
         }
     }
-    root->color = Colors::black;
 }
 
 template <typename T>
-auto RedBlackTree<T>::remove(node_type & iterator, T t) -> decltype(iterator) {
-    if (!iterator) return iterator;
+void RedBlackTree<T>::remove(node_type & iterator, T t) {
+    if (!iterator) return;
     if (t < iterator->value) {
-        iterator->left = remove(iterator->left, t);
+        remove(iterator->left, t);
     }
     else if (t > iterator->value) {
-        iterator->right = remove(iterator->right, t);
+        remove(iterator->right, t);
     }
     else {
         if (iterator->left && iterator->right) {
             auto predecessor = get_rightmost_child(iterator->left);
-            if (!predecessor) return iterator;
             iterator->value = predecessor->value;
             iterator->color = predecessor->color;
-            iterator->left = remove(iterator->left, predecessor->value);
+            remove(iterator->left, predecessor->value);
         }
         else {
-            auto temp = iterator;
-            if (iterator->left) {
-                iterator = iterator->left;
-                temp->left = nullptr;
-            }
-            else if (iterator->right) {
-                iterator = iterator->right;
-                temp->right = nullptr;
-            }
+            auto & temp = iterator;
+            if (iterator->left) iterator = iterator->left;
+            else if (iterator->right) iterator = iterator->right;
             delete temp;
-            //			iterator = nullptr;
+            temp = nullptr;
         }
     }
-    return iterator;
 }
 
 int main() {
     RedBlackTree<int> tree;
     tree.create();
-    //	tree.remove(3);
+    
+    tree.remove(3);
+    
+    std::cout << "print tree: ";
     tree.print(RedBlackTree<int>::Directions::inorder);
-    std::cout << tree.root->value;
     std::cout << std::endl;
+    std::cout << "root: " << tree.root->value << std::endl;
 }
