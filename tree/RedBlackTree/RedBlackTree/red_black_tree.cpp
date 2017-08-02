@@ -28,12 +28,13 @@ private:
     unsigned int max(unsigned lhs, unsigned rhs) { return (lhs > rhs) ? lhs : rhs; }
     
     void set_color(node_type, Colors);
+    Colors get_color(node_type);
     
     void remove(node_type iterator, T t);
     void insert(node_type & iterator, T t);
     void destroy(node_type node);
     void insert_fixup(node_type & iterator, Children child);
-    void remove_fixup(node_type iterator, Children child);
+    void remove_fixup(node_type current, node_type parent, Children child);
     
     void preorder_traverse(node_type node) const;
     void inorder_traverse(node_type node) const;
@@ -66,6 +67,11 @@ public:
 template <typename T>
 void RedBlackTree<T>::set_color(node_type node, Colors color) {
     if (node) node->color = color;
+}
+
+template <typename T>
+Colors RedBlackTree<T>::get_color(node_type node) {
+    return (node) ? node->color : Colors::black;
 }
 
 template <typename T>
@@ -169,10 +175,14 @@ void RedBlackTree<T>::print(enum Directions direction) const {
 template <typename T>
 auto RedBlackTree<T>::get_parent(node_type & node, node_type & parent) const -> decltype(node) {
     if (node == nullptr || parent == nullptr) return parent;
-    if (parent->left == node || parent->right == node) { return parent; }
-    else if (get_parent(node, parent->left) != nullptr) return get_parent(node, parent->left);
-        else return get_parent(node, parent->right);
-            }
+    if (parent->left == node || parent->right == node) {
+        return parent;
+    }
+    else if (get_parent(node, parent->left) != nullptr) {
+        return get_parent(node, parent->left);
+    }
+    else return get_parent(node, parent->right);
+        }
 
 template <typename T>
 auto RedBlackTree<T>::left_rotate(node_type node) -> decltype(node) {
@@ -256,6 +266,7 @@ void RedBlackTree<T>::insert_fixup(node_type & iterator, Children child) {
             }
         }
     }
+    set_color(root, Colors::black);
 }
 
 template <typename T>
@@ -286,7 +297,7 @@ void RedBlackTree<T>::remove(node_type iterator, T t) {
                 parent->right = nullptr;
                 child = Children::right;
             }
-            if (iterator->color == Colors::black) remove_fixup(parent, child);
+            if (iterator->color == Colors::black) remove_fixup(iterator, parent, child);
             delete iterator;
         }
         else if (iterator->left) {
@@ -294,7 +305,10 @@ void RedBlackTree<T>::remove(node_type iterator, T t) {
             if (!parent) root = iterator->left;
             else if (parent->left == iterator) parent->left = iterator->left;
             else parent->right = iterator->left;
-            if (iterator->color == Colors::black) remove_fixup(parent, Children::left);
+            if (get_color(iterator->left) == Colors::red || get_color(iterator) == Colors::red) {
+                set_color(iterator->left, Colors::black);
+            }
+            else if (get_color(iterator->left) == Colors::black && get_color(iterator) == Colors::black) remove_fixup(iterator->left, parent, Children::left);
             delete iterator;
         }
         else {
@@ -302,122 +316,141 @@ void RedBlackTree<T>::remove(node_type iterator, T t) {
             if (!parent) root = iterator->right;
             else if (parent->left == iterator) parent->left = iterator->right;
             else parent->right = iterator->right;
-            if (iterator->color == Colors::black) remove_fixup(parent, Children::right);
+            if (get_color(iterator->right) == Colors::red || get_color(iterator) == Colors::red) {
+                set_color(iterator->right, Colors::black);
+            }
+            else if (get_color(iterator->right) == Colors::black && get_color(iterator)  == Colors::black) {
+                remove_fixup(iterator->right, parent, Children::right);
+            }
             delete iterator;
         }
     }
 }
 
 template <typename T>
-void RedBlackTree<T>::remove_fixup(node_type iterator, Children child) {
-    if (!iterator) return;
-    auto current = iterator;
-    while (current && current->color == Colors::black) {
+void RedBlackTree<T>::remove_fixup(node_type current, node_type parent, Children child) {
+    while ((!current || current->color == Colors::black) && current != root) {
+        // left child
         if (child == Children::left) {
-            auto sibling = current->right;
-            
+            auto sibling = parent->right;
             if (!sibling) return;
             
-            if (sibling->color == Colors::red) {
-                sibling->color = Colors::black;
-                current->color = Colors::red;
+            // case2: left child, red sibling
+            if (get_color(sibling) == Colors::red) {
+                set_color(sibling, Colors::black);
+                set_color(parent, Colors::red);
                 
-                auto parent = get_parent(current, root);
-                if (parent) {
-                    if (parent->left == current) parent->left = left_rotate(current);
-                    else parent->right = left_rotate(current);
+                auto grandparent = get_parent(parent, root);
+                if (grandparent) {
+                    if (grandparent->left == parent) grandparent->left = left_rotate(parent);
+                    else grandparent->right = left_rotate(parent);
                 }
-                else root = left_rotate(current);
+                else root = left_rotate(parent);
                 
-                sibling = current->right;
             }
-            else {
-                auto sibling_left_color = (sibling->left) ? sibling->left->color : Colors::black;
-                auto sibling_right_color = (sibling->right) ? sibling->right->color : Colors::black;
-                if (sibling_left_color == Colors::black && sibling_right_color == Colors::black) {
-                    sibling->color = Colors::red;
-                    current = get_parent(current, root);
-                }
-                
-                if (sibling_right_color == Colors::black) {
-                    if (sibling->left) sibling->left->color = Colors::black;
-                    sibling->color = Colors::red;
-                    
-                    current->right = right_rotate(sibling);
 
-                    sibling = current->right;
+            // case3: left child, black sibling, 2 black nieces
+            if (get_color(sibling) == Colors::black && get_color(sibling->left) == Colors::black && get_color(sibling->right) == Colors::black) {
+                set_color(sibling, Colors::red);
+                current = parent;
+                parent = get_parent(current, root);
+            }
+            
+            // case4: left child, black sibling, red parent, terminal case
+            if (get_color(parent) == Colors::red && get_color(sibling) == Colors::black) {
+                set_color(parent, Colors::black);
+                set_color(sibling, Colors::red);
+                break;
+            }
+            
+            // case5: left child, black sibling, right nephew black
+            if (get_color(sibling) == Colors::black && get_color(sibling->right) == Colors::black) {
+                set_color(sibling->left, Colors::black);
+                set_color(sibling, Colors::red);
+                
+                parent->right = right_rotate(sibling);
+                
+            }
+            // case6: left child, black sibling, right nephew red, terminal case
+            else if (get_color(sibling) == Colors::black && get_color(sibling->right) == Colors::red) {
+                set_color(sibling, parent->color);
+                set_color(parent, Colors::black);
+                set_color(sibling->right, Colors::black);
+                
+                auto grandparent = get_parent(parent, root);
+                if (grandparent) {
+                    if (grandparent->left == parent) grandparent->left = left_rotate(parent);
+                    else grandparent->right = left_rotate(parent);
                 }
-                else if (sibling->right->color == Colors::red) {
-                    sibling->color = current->color;
-                    current->color = Colors::black;
-                    if (sibling->right) sibling->right->color = Colors::black;
-                    
-                    auto parent = get_parent(current, root);
-                    if (parent) {
-                        if (parent->left == current) parent->left = left_rotate(current);
-                        else parent->right = left_rotate(current);
-                    }
-                    else root = left_rotate(current);
-                    
-                    break;
-                }
+                else root = left_rotate(parent);
+                break;
             }
         }
+        // right child
         else {
-            auto sibling = current->left;
-            
+            auto sibling = parent->left;
             if (!sibling) return;
             
-            if (sibling->color == Colors::red) {
-                sibling->color = Colors::black;
-                current->color = Colors::red;
+            // case2: right child, left sibling red
+            if (get_color(sibling) == Colors::red) {
+                set_color(sibling, Colors::black);
+                set_color(parent, Colors::red);
                 
-                auto parent = get_parent(current, root);
-                if (parent) {
-                    if (parent->left == current) parent->left = right_rotate(current);
-                    else parent->right = right_rotate(current);
+                auto grandparent = get_parent(parent, root);
+                if (grandparent) {
+                    if (grandparent->left == parent) grandparent->left = right_rotate(parent);
+                    else grandparent->right = right_rotate(parent);
                 }
-                else root = right_rotate(current);
+                else root = right_rotate(parent);
                 
-                sibling = current->left;
             }
-            else {
-                auto sibling_left_color = (sibling->left) ? sibling->left->color : Colors::black;
-                auto sibling_right_color = (sibling->right) ? sibling->right->color : Colors::black;
-                if (sibling_left_color == Colors::black && sibling_right_color == Colors::black) {
-                    sibling->color = Colors::red;
-                    current = get_parent(current, root);
+            
+            // case3: right child, left sibling black, 2 black nieces
+            if (get_color(sibling) == Colors::black && get_color(sibling->left) == Colors::black && get_color(sibling->right) == Colors::black) {
+                set_color(sibling, Colors::red);
+                current = parent;
+                parent = get_parent(current, root);
+            }
+            
+            // case4: right child, black sibling, red parent
+            if (get_color(parent) == Colors::red && get_color(sibling) == Colors::black) {
+                set_color(parent, Colors::black);
+                set_color(sibling, Colors::red);
+                break;
+            }
+            
+            // case5: right child, left sibling black, right black nephew
+            if (get_color(sibling) == Colors::black && get_color(sibling->left) == Colors::black) {
+                set_color(sibling->left, Colors::black);
+                set_color(sibling, Colors::red);
+                
+                parent->right = left_rotate(sibling);
+            }
+            
+            // case6: right child, left sibling black, left nephew red, terminal case
+            else if (get_color(sibling) == Colors::black && get_color(sibling->left) == Colors::red) {
+                set_color(sibling->left, parent->color);
+                set_color(parent, Colors::black);
+                set_color(sibling->right, Colors::black);
+                
+                auto grandparent = get_parent(parent, root);
+                if (grandparent) {
+                    if (grandparent->left == parent) grandparent->left = right_rotate(parent);
+                    else grandparent->right = right_rotate(parent);
                 }
-                if (sibling_right_color == Colors::black) {
-                    if (sibling->right) sibling->right->color = Colors::black;
-                    sibling->color = Colors::red;
-                    
-                    current->right = left_rotate(sibling);
-                    
-                    sibling = current->left;
-                }
-                else if (sibling_right_color == Colors::red) {
-                    sibling->color = current->color;
-                    current->color = Colors::black;
-                    if (sibling->left) sibling->left->color = Colors::black;
-                    
-                    auto parent = get_parent(current, root);
-                    if (parent) {
-                        if (parent->left == current) parent->left = right_rotate(current);
-                        else parent->right = right_rotate(current);
-                    }
-                    else root = right_rotate(current);
-                    
-                    break;
-                }
+                else root = right_rotate(parent);
+                break;
             }
         }
     }
+    // case 1: double black is root
+    set_color(root, Colors::black);
 }
 
 int main() {
     RedBlackTree<int> tree;
     tree.create();
+    
     tree.print(RedBlackTree<int>::Directions::inorder);
     std::cout << "root: " << tree.root->value << std::endl;
     
@@ -426,9 +459,8 @@ int main() {
         int j = 0;
         std::cin >> j;
         tree.remove(j);
+        std::cout << " root: " << ((tree.root) ? tree.root->value : 0) << std::endl;
+        
         tree.print(RedBlackTree<int>::Directions::inorder);
-        std::cout << " root: " << ((tree.root) ? tree.root->value : 0)<< std::endl;
     }
-    
-    std::cout << "root: " << tree.root->value << std::endl;
 }
