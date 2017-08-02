@@ -27,10 +27,13 @@ public:
 private:
     unsigned int max(unsigned lhs, unsigned rhs) { return (lhs > rhs) ? lhs : rhs; }
     
-    void remove(node_type & iterator, T t);
+    void set_color(node_type, Colors);
+    
+    void remove(node_type iterator, T t);
     void insert(node_type & iterator, T t);
     void destroy(node_type node);
     void insert_fixup(node_type & iterator, Children child);
+    void remove_fixup(node_type iterator, Children child);
     
     void preorder_traverse(node_type node) const;
     void inorder_traverse(node_type node) const;
@@ -59,6 +62,11 @@ public:
     void print(enum Directions direction) const;
     decltype(auto) find(T t) const { return find(root, t); }
 };
+
+template <typename T>
+void RedBlackTree<T>::set_color(node_type node, Colors color) {
+    if (node) node->color = color;
+}
 
 template <typename T>
 void RedBlackTree<T>::create() {
@@ -251,7 +259,7 @@ void RedBlackTree<T>::insert_fixup(node_type & iterator, Children child) {
 }
 
 template <typename T>
-void RedBlackTree<T>::remove(node_type & iterator, T t) {
+void RedBlackTree<T>::remove(node_type iterator, T t) {
     if (!iterator) return;
     if (t < iterator->value) {
         remove(iterator->left, t);
@@ -266,12 +274,143 @@ void RedBlackTree<T>::remove(node_type & iterator, T t) {
             iterator->color = predecessor->color;
             remove(iterator->left, predecessor->value);
         }
+        else if (!iterator->left && !iterator->right) {
+            auto parent = get_parent(iterator, root);
+            Children child;
+            if (!parent) { root = nullptr; return; }
+            else if (iterator == parent->left) {
+                parent->left = nullptr;
+                child = Children::left;
+            }
+            else {
+                parent->right = nullptr;
+                child = Children::right;
+            }
+            if (iterator->color == Colors::black) remove_fixup(parent, child);
+            delete iterator;
+        }
+        else if (iterator->left) {
+            auto parent = get_parent(iterator, root);
+            if (!parent) root = iterator->left;
+            else if (parent->left == iterator) parent->left = iterator->left;
+            else parent->right = iterator->left;
+            if (iterator->color == Colors::black) remove_fixup(parent, Children::left);
+            delete iterator;
+        }
         else {
-            auto & temp = iterator;
-            if (iterator->left) iterator = iterator->left;
-            else if (iterator->right) iterator = iterator->right;
-            delete temp;
-            temp = nullptr;
+            auto parent = get_parent(iterator, root);
+            if (!parent) root = iterator->right;
+            else if (parent->left == iterator) parent->left = iterator->right;
+            else parent->right = iterator->right;
+            if (iterator->color == Colors::black) remove_fixup(parent, Children::right);
+            delete iterator;
+        }
+    }
+}
+
+template <typename T>
+void RedBlackTree<T>::remove_fixup(node_type iterator, Children child) {
+    if (!iterator) return;
+    auto current = iterator;
+    while (current && current->color == Colors::black) {
+        if (child == Children::left) {
+            auto sibling = current->right;
+            
+            if (!sibling) return;
+            
+            if (sibling->color == Colors::red) {
+                sibling->color = Colors::black;
+                current->color = Colors::red;
+                
+                auto parent = get_parent(current, root);
+                if (parent) {
+                    if (parent->left == current) parent->left = left_rotate(current);
+                    else parent->right = left_rotate(current);
+                }
+                else root = left_rotate(current);
+                
+                sibling = current->right;
+            }
+            else {
+                auto sibling_left_color = (sibling->left) ? sibling->left->color : Colors::black;
+                auto sibling_right_color = (sibling->right) ? sibling->right->color : Colors::black;
+                if (sibling_left_color == Colors::black && sibling_right_color == Colors::black) {
+                    sibling->color = Colors::red;
+                    current = get_parent(current, root);
+                }
+                
+                if (sibling_right_color == Colors::black) {
+                    if (sibling->left) sibling->left->color = Colors::black;
+                    sibling->color = Colors::red;
+                    
+                    current->right = right_rotate(sibling);
+
+                    sibling = current->right;
+                }
+                else if (sibling->right->color == Colors::red) {
+                    sibling->color = current->color;
+                    current->color = Colors::black;
+                    if (sibling->right) sibling->right->color = Colors::black;
+                    
+                    auto parent = get_parent(current, root);
+                    if (parent) {
+                        if (parent->left == current) parent->left = left_rotate(current);
+                        else parent->right = left_rotate(current);
+                    }
+                    else root = left_rotate(current);
+                    
+                    break;
+                }
+            }
+        }
+        else {
+            auto sibling = current->left;
+            
+            if (!sibling) return;
+            
+            if (sibling->color == Colors::red) {
+                sibling->color = Colors::black;
+                current->color = Colors::red;
+                
+                auto parent = get_parent(current, root);
+                if (parent) {
+                    if (parent->left == current) parent->left = right_rotate(current);
+                    else parent->right = right_rotate(current);
+                }
+                else root = right_rotate(current);
+                
+                sibling = current->left;
+            }
+            else {
+                auto sibling_left_color = (sibling->left) ? sibling->left->color : Colors::black;
+                auto sibling_right_color = (sibling->right) ? sibling->right->color : Colors::black;
+                if (sibling_left_color == Colors::black && sibling_right_color == Colors::black) {
+                    sibling->color = Colors::red;
+                    current = get_parent(current, root);
+                }
+                if (sibling_right_color == Colors::black) {
+                    if (sibling->right) sibling->right->color = Colors::black;
+                    sibling->color = Colors::red;
+                    
+                    current->right = left_rotate(sibling);
+                    
+                    sibling = current->left;
+                }
+                else if (sibling_right_color == Colors::red) {
+                    sibling->color = current->color;
+                    current->color = Colors::black;
+                    if (sibling->left) sibling->left->color = Colors::black;
+                    
+                    auto parent = get_parent(current, root);
+                    if (parent) {
+                        if (parent->left == current) parent->left = right_rotate(current);
+                        else parent->right = right_rotate(current);
+                    }
+                    else root = right_rotate(current);
+                    
+                    break;
+                }
+            }
         }
     }
 }
@@ -279,11 +418,17 @@ void RedBlackTree<T>::remove(node_type & iterator, T t) {
 int main() {
     RedBlackTree<int> tree;
     tree.create();
-    
-    tree.remove(3);
-    
-    std::cout << "print tree: ";
     tree.print(RedBlackTree<int>::Directions::inorder);
-    std::cout << std::endl;
+    std::cout << "root: " << tree.root->value << std::endl;
+    
+    for (int i = 0; i < 3; ++i) {
+        std::cout << "remove: ";
+        int j = 0;
+        std::cin >> j;
+        tree.remove(j);
+        tree.print(RedBlackTree<int>::Directions::inorder);
+        std::cout << " root: " << ((tree.root) ? tree.root->value : 0)<< std::endl;
+    }
+    
     std::cout << "root: " << tree.root->value << std::endl;
 }
