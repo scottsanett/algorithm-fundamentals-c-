@@ -95,17 +95,33 @@ auto RedBlackTree<T>::find(node_type node, T t) const -> decltype(node) {
 
 template <typename T>
 auto RedBlackTree<T>::get_leftmost_child(node_type node) const -> decltype(node) {
-    if (!node->left && !node->right) return node;
-    else if (!node->left && node->right) return get_leftmost_child(node->right);
-        else return get_leftmost_child(node->left);
-            }
+    if (!node->left && !node->right) {
+        return node;
+    }
+    else if (node->left) {
+        return get_leftmost_child(node->left);
+    }
+    else return node;
+    /*
+    else if (node->left && !node->right) {
+        return get_leftmost_child(node->left);
+    }
+    else {
+        return get_leftmost_child(node->left);
+    }
+     */
+}
 
 template <typename T> // a node's left substree's right most child
 auto RedBlackTree<T>::get_rightmost_child(node_type node) const -> decltype(node) {
-    if (!node->left && !node->right) return node;
-    else if (node->left && !node->right) { return get_rightmost_child(node->left); }
-    else return get_rightmost_child(node->right);
-        }
+    if (!node->left && !node->right) { return node; }
+    else if (node->right) { return get_rightmost_child(node->right); }
+    else return node;
+    /*
+    else if (node->right && !node->left) { return get_rightmost_child(node->right); }
+    else { return get_rightmost_child(node->right); }
+     */
+}
 
 
 template <typename T>
@@ -284,12 +300,14 @@ void RedBlackTree<T>::remove(node_type iterator, T t) {
     }
     else {
         if (iterator->left && iterator->right) {
+            std::cout << "deleting node with 2 children: " << std::endl;
             auto predecessor = get_rightmost_child(iterator->left);
             iterator->value = predecessor->value;
             iterator->color = predecessor->color;
             remove(iterator->left, predecessor->value);
         }
         else if (!iterator->left && !iterator->right) {
+            std::cout << "deleting node with no children: " << std::endl;
             auto parent = get_parent(iterator, root);
             Children child;
             if (!parent) { root = nullptr; return; }
@@ -305,17 +323,21 @@ void RedBlackTree<T>::remove(node_type iterator, T t) {
             delete iterator;
         }
         else if (iterator->left) {
+            std::cout << "deleting node with a left child: " << std::endl;
             auto parent = get_parent(iterator, root);
             if (!parent) root = iterator->left;
             else if (parent->left == iterator) parent->left = iterator->left;
             else parent->right = iterator->left;
-            if (get_color(iterator->left) == Colors::red || get_color(iterator) == Colors::red) {
+            if (get_color(iterator->left) == Colors::black && get_color(iterator) == Colors::black) {
+                remove_fixup(iterator->left, parent, Children::left);
+            }
+            else if (get_color(iterator->left) == Colors::red || get_color(iterator) == Colors::red) {
                 set_color(iterator->left, Colors::black);
             }
-            else if (get_color(iterator->left) == Colors::black && get_color(iterator) == Colors::black) remove_fixup(iterator->left, parent, Children::left);
             delete iterator;
         }
         else {
+            std::cout << "deleting node with a right child: " << std::endl;
             auto parent = get_parent(iterator, root);
             if (!parent) root = iterator->right;
             else if (parent->left == iterator) parent->left = iterator->right;
@@ -335,12 +357,13 @@ template <typename T>
 void RedBlackTree<T>::remove_fixup(node_type current, node_type parent, Children child) {
     while ((!current || current->color == Colors::black) && current != root) {
         // left child
-        if (child == Children::left) {
+        if (current == parent->left) {
             auto sibling = parent->right;
             if (!sibling) return;
             
             // case2: left child, red sibling
             if (get_color(sibling) == Colors::red) {
+                std::cout << "case2: left chid, right sibling is red" << std::endl;
                 set_color(sibling, Colors::black);
                 set_color(parent, Colors::red);
                 
@@ -353,8 +376,9 @@ void RedBlackTree<T>::remove_fixup(node_type current, node_type parent, Children
                 
             }
 
-            // case3: left child, black sibling, 2 black nieces
+            // case3: left child, black sibling, 2 black nephews
             if (get_color(sibling) == Colors::black && get_color(sibling->left) == Colors::black && get_color(sibling->right) == Colors::black) {
+                std::cout << "case3: left child, right sibling is black with 2 black nephews" << std::endl;
                 set_color(sibling, Colors::red);
                 current = parent;
                 parent = get_parent(current, root);
@@ -362,6 +386,7 @@ void RedBlackTree<T>::remove_fixup(node_type current, node_type parent, Children
             
             // case4: left child, black sibling, red parent, terminal case
             if (get_color(parent) == Colors::red && get_color(sibling) == Colors::black) {
+                std::cout << "case4: left child, right sibling is black, parent is red, terminal" << std::endl;
                 set_color(parent, Colors::black);
                 set_color(sibling, Colors::red);
                 break;
@@ -369,6 +394,7 @@ void RedBlackTree<T>::remove_fixup(node_type current, node_type parent, Children
             
             // case5: left child, black sibling, right nephew black
             if (get_color(sibling) == Colors::black && get_color(sibling->right) == Colors::black) {
+                std::cout << "left child, right sibling is black, right nephew is black" << std::endl;
                 set_color(sibling->left, Colors::black);
                 set_color(sibling, Colors::red);
                 
@@ -377,6 +403,7 @@ void RedBlackTree<T>::remove_fixup(node_type current, node_type parent, Children
             }
             // case6: left child, black sibling, right nephew red, terminal case
             else if (get_color(sibling) == Colors::black && get_color(sibling->right) == Colors::red) {
+                std::cout << "left child, right sibling is black, right nephew is red, terminal" << std::endl;
                 set_color(sibling, parent->color);
                 set_color(parent, Colors::black);
                 set_color(sibling->right, Colors::black);
@@ -397,6 +424,7 @@ void RedBlackTree<T>::remove_fixup(node_type current, node_type parent, Children
             
             // case2: right child, left sibling red
             if (get_color(sibling) == Colors::red) {
+                std::cout << "case2: right child, left sibling is red" << std::endl;
                 set_color(sibling, Colors::black);
                 set_color(parent, Colors::red);
                 
@@ -411,6 +439,7 @@ void RedBlackTree<T>::remove_fixup(node_type current, node_type parent, Children
             
             // case3: right child, left sibling black, 2 black nieces
             if (get_color(sibling) == Colors::black && get_color(sibling->left) == Colors::black && get_color(sibling->right) == Colors::black) {
+                std::cout << "case3: right child, left sibling is black with 2 black nephews" << std::endl;
                 set_color(sibling, Colors::red);
                 current = parent;
                 parent = get_parent(current, root);
@@ -418,13 +447,15 @@ void RedBlackTree<T>::remove_fixup(node_type current, node_type parent, Children
             
             // case4: right child, black sibling, red parent
             if (get_color(parent) == Colors::red && get_color(sibling) == Colors::black) {
+                std::cout << "case4: right child, red parent, black sibling, terminal" << std::endl;
                 set_color(parent, Colors::black);
                 set_color(sibling, Colors::red);
                 break;
             }
             
-            // case5: right child, left sibling black, right black nephew
+            // case5: right child, left sibling black, left black nephew
             if (get_color(sibling) == Colors::black && get_color(sibling->left) == Colors::black) {
+                std::cout << "case5: right child, left sibling is black, left nephew is black" << std::endl;
                 set_color(sibling->left, Colors::black);
                 set_color(sibling, Colors::red);
                 
@@ -433,6 +464,7 @@ void RedBlackTree<T>::remove_fixup(node_type current, node_type parent, Children
             
             // case6: right child, left sibling black, left nephew red, terminal case
             else if (get_color(sibling) == Colors::black && get_color(sibling->left) == Colors::red) {
+                std::cout << "case6: right child, left sibling is black, left nephew is red" << std::endl;
                 set_color(sibling->left, parent->color);
                 set_color(parent, Colors::black);
                 set_color(sibling->right, Colors::black);
@@ -463,6 +495,7 @@ int main() {
         int j = 0;
         std::cin >> j;
         tree.remove(j);
+        
         std::cout << " root: " << ((tree.root) ? tree.root->value : 0) << std::endl;
         
         tree.print(RedBlackTree<int>::Directions::inorder);
