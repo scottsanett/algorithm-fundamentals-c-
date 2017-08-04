@@ -151,15 +151,19 @@ decltype(auto) AVLTree<T>::find(node_type node, T t) const {
 template <typename T>
 decltype(auto) AVLTree<T>::get_leftmost_child(node_type node) const {
     if (!node->left && !node->right) return node;
-    else if (!node->left && node->right) return get_leftmost_child(node->right);
-    else return get_leftmost_child(node->left);
+    else if (node->left) return get_leftmost_child(node->left);
+    else return node;
+//    else if (!node->left && node->right) return get_leftmost_child(node->right);
+//    else return get_leftmost_child(node->left);
 }
 
 template <typename T> // a node's left substree's right most child
 decltype(auto) AVLTree<T>::get_rightmost_child(node_type node) const {
     if (!node->left && !node->right) return node;
-    else if (node->left && !node->right) { return get_rightmost_child(node->left); }
-    else return get_rightmost_child(node->right);
+    else if (node->right) return get_rightmost_child(node->right);
+    else return node;
+//    else if (node->left && !node->right) { return get_rightmost_child(node->left); }
+//    else return get_rightmost_child(node->right);
 }
 
 

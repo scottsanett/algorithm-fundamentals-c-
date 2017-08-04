@@ -82,15 +82,19 @@ Node<T> * BinarySearchTree<T>::find(Node<T> * node, T t) const {
 template <typename T>
 Node<T> * BinarySearchTree<T>::get_leftmost_child(Node<T> * node) const {
     if (!node->left && !node->right) return node;
-    else if (!node->left && node->right) return get_leftmost_child(node->right);
-    else return get_leftmost_child(node->left);
+    else if (node->left) return get_leftmost_child(node->left);
+    else return node;
+//    else if (!node->left && node->right) return get_leftmost_child(node->right);
+//    else return get_leftmost_child(node->left);
 }
 
 template <typename T> // a node's left substree's right most child
 Node<T> * BinarySearchTree<T>::get_rightmost_child(Node<T> * node) const {
     if (!node->left && !node->right) return node;
-    else if (node->left && !node->right) { return get_rightmost_child(node->left); }
-    else return get_rightmost_child(node->right);
+    else if (node->right) return get_rightmost_child(node->right);
+    else return node;
+//    else if (node->left && !node->right) { return get_rightmost_child(node->left); }
+//    else return get_rightmost_child(node->right);
 }
 
 template <typename T>
@@ -213,7 +217,7 @@ Node<T> * BinarySearchTree<T>::get_parent(Node<T> * node, Node<T> * parent) cons
 
 int main() {
     BinarySearchTree<int> tree;
-    tree.create();
+        tree.create();
     tree.print(BinarySearchTree<int>::Directions::preorder); std::cout << std::endl;
     tree.print(BinarySearchTree<int>::Directions::inorder); std::cout << std::endl;
     tree.print(BinarySearchTree<int>::Directions::postorder); std::cout << std::endl;
